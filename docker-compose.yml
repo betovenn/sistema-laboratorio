@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  postgres-iam:
+    image: postgres:15
+    container_name: bd_iam
+    environment:
+      POSTGRES_USER: admin_iam
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: iam_db
+    ports:
+      - "5432:5432"
