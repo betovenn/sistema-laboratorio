@@ -1,11 +1,272 @@
-version: '3.8'
+# Sistema de Prácticas de Laboratorio — orquestación local.
+#
+#   docker compose up -d                 infraestructura + iam-service (lo que ya existe)
+#   docker compose --profile todos up    los siete servicios (falla en los que aún son esqueleto)
+#   docker compose --profile escolar up  infraestructura + iam + escolar
+#
+# Los servicios que todavía no tienen código están detrás de un perfil para que
+# el `up` por omisión siga funcionando. Quita el `profiles:` de un servicio
+# cuando su directorio ya compile.
+#
+# Dos redes: `borde` la ve el anfitrión, `interna` no tiene salida al exterior.
+# Solo el gateway publica puerto. Ver docs/06-infraestructura.md.
+
+name: sistema-laboratorio
+
+x-servicio-comun: &servicio-comun
+  restart: unless-stopped
+  networks: [interna]
+
+networks:
+  borde:
+  interna:
+    internal: true
+
+volumes:
+  pgdata:
+  mongodata:
+  mqdata:
+
 services:
-  postgres-iam:
-    image: postgres:15
-    container_name: bd_iam
-    environment:
-      POSTGRES_USER: admin_iam
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: iam_db
+
+  # ─────────────────────────────── Puerta de entrada ───────────────────────────────
+  gateway:
+    image: traefik:v3.3
+    container_name: lab_gateway
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=sistema-laboratorio_interna
+      - --entrypoints.web.address=:80
+      - --accesslog=true
+      - --api.dashboard=true
+      - --api.insecure=true          # solo desarrollo: expone el panel en :8090
     ports:
-      - "5432:5432"
+      - "8080:80"                    # toda la API entra por aquí
+      - "8090:8080"                  # panel de Traefik (desarrollo)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [borde, interna]
+
+  # ─────────────────────────────────── Almacenes ───────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: lab_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      IAM_DB_PASSWORD: ${IAM_DB_PASSWORD}
+      ESCOLAR_DB_PASSWORD: ${ESCOLAR_DB_PASSWORD}
+      LOGISTICA_DB_PASSWORD: ${LOGISTICA_DB_PASSWORD}
+      EQUIPOS_DB_PASSWORD: ${EQUIPOS_DB_PASSWORD}
+      EJECUCION_DB_PASSWORD: ${EJECUCION_DB_PASSWORD}
+      EVALUACION_DB_PASSWORD: ${EVALUACION_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [interna]
+    # Para inspeccionar la base desde el anfitrión, descomenta y usa localhost:5432.
+    # ports: ["5432:5432"]
+    # Sin esto: docker compose exec postgres psql -U escolar -d escolar_db
+
+  mongo:
+    image: mongo:7
+    container_name: lab_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: academico
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [interna]
+
+  redis:
+    image: redis:7-alpine
+    container_name: lab_redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    networks: [interna]
+    # Sin persistencia a propósito: aquí solo viven códigos de unión con TTL.
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: lab_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - mqdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    networks: [interna]
+
+  # ─────────────────────────────── MS-01 · Identidad ───────────────────────────────
+  iam-service:
+    <<: *servicio-comun
+    build: ./iam-service
+    container_name: lab_iam
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iam_db
+      SPRING_DATASOURCE_USERNAME: iam
+      SPRING_DATASOURCE_PASSWORD: ${IAM_DB_PASSWORD}
+      JWT_ISSUER: ${JWT_ISSUER:-iam-service}
+      JWT_ACCESO_MINUTOS: ${JWT_ACCESO_MINUTOS:-60}
+      JWT_REFRESCO_HORAS: ${JWT_REFRESCO_HORAS:-8}
+    depends_on:
+      postgres: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.iam.rule=PathPrefix(`/api/auth`)
+      - traefik.http.middlewares.iam-strip.stripprefix.prefixes=/api/auth
+      - traefik.http.routers.iam.middlewares=iam-strip
+      - traefik.http.services.iam.loadbalancer.server.port=8080
+
+  # ────────────────────────── MS-02 · Gestión Escolar ──────────────────────────────
+  escolar-service:
+    <<: *servicio-comun
+    build: ./escolar-service
+    container_name: lab_escolar
+    profiles: [escolar, todos]
+    environment:
+      DATABASE_URL: postgresql://escolar:${ESCOLAR_DB_PASSWORD}@postgres:5432/escolar_db
+      JWKS_URL: http://iam-service:8080/v1/.well-known/jwks.json
+    depends_on:
+      postgres: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.escolar.rule=PathPrefix(`/api/escolar`)
+      - traefik.http.middlewares.escolar-strip.stripprefix.prefixes=/api/escolar
+      - traefik.http.routers.escolar.middlewares=escolar-strip
+      - traefik.http.services.escolar.loadbalancer.server.port=8000
+
+  # ───────────────────────── MS-03 · Gestión Académica ─────────────────────────────
+  academico-service:
+    <<: *servicio-comun
+    build: ./academico-service
+    container_name: lab_academico
+    profiles: [academico, todos]
+    environment:
+      MONGO_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/academico?authSource=admin
+      JWKS_URL: http://iam-service:8080/v1/.well-known/jwks.json
+      ESCOLAR_URL: http://escolar-service:8000
+    depends_on:
+      mongo: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.academico.rule=PathPrefix(`/api/academico`)
+      - traefik.http.middlewares.academico-strip.stripprefix.prefixes=/api/academico
+      - traefik.http.routers.academico.middlewares=academico-strip
+      - traefik.http.services.academico.loadbalancer.server.port=3000
+
+  # ───────────────────────── MS-04 · Logística e Inventario ────────────────────────
+  logistica-service:
+    <<: *servicio-comun
+    build: ./logistica-service
+    container_name: lab_logistica
+    profiles: [logistica, todos]
+    environment:
+      DATABASE_URL: postgres://logistica:${LOGISTICA_DB_PASSWORD}@postgres:5432/logistica_db?sslmode=disable
+      JWKS_URL: http://iam-service:8080/v1/.well-known/jwks.json
+      ESCOLAR_URL: http://escolar-service:8000
+      ACADEMICO_URL: http://academico-service:3000
+      EQUIPOS_URL: http://equipos-service:3000
+      AMQP_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.logistica.rule=PathPrefix(`/api/logistica`)
+      - traefik.http.middlewares.logistica-strip.stripprefix.prefixes=/api/logistica
+      - traefik.http.routers.logistica.middlewares=logistica-strip
+      - traefik.http.services.logistica.loadbalancer.server.port=8080
+
+  # ──────────────────────────────── MS-05 · Equipos ────────────────────────────────
+  equipos-service:
+    <<: *servicio-comun
+    build: ./equipos-service
+    container_name: lab_equipos
+    profiles: [equipos, todos]
+    environment:
+      DATABASE_URL: postgresql://equipos:${EQUIPOS_DB_PASSWORD}@postgres:5432/equipos_db
+      REDIS_URL: redis://redis:6379
+      JWKS_URL: http://iam-service:8080/v1/.well-known/jwks.json
+      ESCOLAR_URL: http://escolar-service:8000
+      ACADEMICO_URL: http://academico-service:3000
+      AMQP_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.equipos.rule=PathPrefix(`/api/equipos`)
+      - traefik.http.middlewares.equipos-strip.stripprefix.prefixes=/api/equipos
+      - traefik.http.routers.equipos.middlewares=equipos-strip
+      - traefik.http.services.equipos.loadbalancer.server.port=3000
+
+  # ─────────────────────────────── MS-06 · Ejecución ───────────────────────────────
+  ejecucion-service:
+    <<: *servicio-comun
+    build: ./ejecucion-service
+    container_name: lab_ejecucion
+    profiles: [ejecucion, todos]
+    environment:
+      DATABASE_URL: postgresql://ejecucion:${EJECUCION_DB_PASSWORD}@postgres:5432/ejecucion_db
+      JWKS_URL: http://iam-service:8080/v1/.well-known/jwks.json
+      IAM_URL: http://iam-service:8080
+      ACADEMICO_URL: http://academico-service:3000
+      EQUIPOS_URL: http://equipos-service:3000
+    depends_on:
+      postgres: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ejecucion.rule=PathPrefix(`/api/ejecucion`) || PathPrefix(`/ws/ejecucion`)
+      - traefik.http.middlewares.ejecucion-strip.stripprefix.prefixes=/api/ejecucion
+      - traefik.http.routers.ejecucion.middlewares=ejecucion-strip
+      - traefik.http.services.ejecucion.loadbalancer.server.port=3000
+
+  # ────────────────────────────── MS-07 · Evaluación ───────────────────────────────
+  evaluacion-service:
+    <<: *servicio-comun
+    build: ./evaluacion-service
+    container_name: lab_evaluacion
+    profiles: [evaluacion, todos]
+    environment:
+      DATABASE_URL: postgresql://evaluacion:${EVALUACION_DB_PASSWORD}@postgres:5432/evaluacion_db
+      JWKS_URL: http://iam-service:8080/v1/.well-known/jwks.json
+      ESCOLAR_URL: http://escolar-service:8000
+      EQUIPOS_URL: http://equipos-service:3000
+      EJECUCION_URL: http://ejecucion-service:3000
+      AMQP_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.evaluacion.rule=PathPrefix(`/api/evaluacion`)
+      - traefik.http.middlewares.evaluacion-strip.stripprefix.prefixes=/api/evaluacion
+      - traefik.http.routers.evaluacion.middlewares=evaluacion-strip
+      - traefik.http.services.evaluacion.loadbalancer.server.port=8000

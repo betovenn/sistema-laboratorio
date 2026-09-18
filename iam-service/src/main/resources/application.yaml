@@ -1,3 +1,32 @@
 spring:
   application:
     name: iam
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/iam_db}
+    username: ${SPRING_DATASOURCE_USERNAME:iam}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      # A 40 concurrentes basta un pool chico: seis servicios con 5 cada uno dan 30
+      # conexiones, muy por debajo del max_connections=100 de PostgreSQL.
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      # En desarrollo: update. Antes de producción, migraciones versionadas (Flyway).
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+server:
+  port: 8080
+
+jwt:
+  emisor: ${JWT_ISSUER:iam-service}
+  acceso-minutos: ${JWT_ACCESO_MINUTOS:60}
+  refresco-horas: ${JWT_REFRESCO_HORAS:8}
+
+logging:
+  level:
+    root: INFO

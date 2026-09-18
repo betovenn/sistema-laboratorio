@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://laboratorio.uaemex/eventos/kit.solicitado/v1",
+  "title": "kit.solicitado",
+  "description": "Un equipo solicita su kit al laboratorio. Publica equipos-service, consume logistica-service en la cola logistica.kits.",
+  "type": "object",
+  "required": ["evento_id", "tipo", "version", "ocurrido_en", "equipo_id",
+               "practica_programada_id", "grupo_id", "cuenta_responsable", "integrantes"],
+  "additionalProperties": false,
+  "properties": {
+    "evento_id": {
+      "type": "string", "format": "uuid",
+      "description": "Idempotencia. El consumidor descarta los repetidos: RabbitMQ entrega al menos una vez, no exactamente una."
+    },
+    "tipo": { "const": "kit.solicitado" },
+    "version": { "type": "integer", "const": 1 },
+    "ocurrido_en": { "type": "string", "format": "date-time" },
+    "equipo_id": { "type": "integer" },
+    "practica_programada_id": { "type": "integer" },
+    "grupo_id": { "type": "integer" },
+    "cuenta_responsable": {
+      "type": "string", "maxLength": 15,
+      "description": "Número de cuenta del integrante que recibirá el material."
+    },
+    "integrantes": { "type": "integer", "minimum": 1 }
+  }
+}

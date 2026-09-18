@@ -1,0 +1,31 @@
+# Secretos
+.env
+*.pem
+*.key
+
+# Java / Gradle
+**/build/
+**/.gradle/
+*.class
+
+# Node
+node_modules/
+dist/
+npm-debug.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Go
+logistica-service/bin/
+
+# Editores y sistema
+.idea/
+.vscode/
+*.swp
+.DS_Store

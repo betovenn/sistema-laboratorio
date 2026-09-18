@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://laboratorio.uaemex/eventos/incidencia.registrada/v1",
+  "title": "incidencia.registrada",
+  "description": "Al devolver un kit se reportó material quemado, perdido o dañado. Publica logistica-service, consume evaluacion-service en la cola evaluacion.incidencias. El consumidor aplica la penalización a la calificación individual de CADA integrante del equipo.",
+  "type": "object",
+  "required": ["evento_id", "tipo", "version", "ocurrido_en", "equipo_id",
+               "practica_programada_id", "incidencias"],
+  "additionalProperties": false,
+  "properties": {
+    "evento_id": { "type": "string", "format": "uuid" },
+    "tipo": { "const": "incidencia.registrada" },
+    "version": { "type": "integer", "const": 1 },
+    "ocurrido_en": { "type": "string", "format": "date-time" },
+    "equipo_id": { "type": "integer" },
+    "practica_programada_id": { "type": "integer" },
+    "incidencias": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["incidencia_id", "clave_articulo", "tipo", "cantidad"],
+        "additionalProperties": false,
+        "properties": {
+          "incidencia_id": { "type": "integer" },
+          "clave_articulo": { "type": "string" },
+          "tipo": { "enum": ["QUEMADO", "PERDIDO", "DANADO"] },
+          "cantidad": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}
