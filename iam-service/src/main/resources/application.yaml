@@ -1,3 +1,16 @@
 spring:
   application:
     name: iam
+  datasource:
+    url: jdbc:postgresql://localhost:5432/iam_db
+    username: admin_iam
+    password: password123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+    show-sql: true # Útil para ver en la terminal las consultas que hace Hibernate
+  sql:
+    init:
+      mode: always
