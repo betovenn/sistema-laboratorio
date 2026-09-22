@@ -52,7 +52,7 @@ public class AuthController {
             }
         }
         // Retornar http 401 si no existe el usuario o la contrasena es incorrecta
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales invalidas");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales invalidas\n");
     }
 
     private String generarToken(Usuario usuario) {

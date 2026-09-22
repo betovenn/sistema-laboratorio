@@ -11,6 +11,3 @@ spring:
       ddl-auto: update
     defer-datasource-initialization: true
     show-sql: true # Útil para ver en la terminal las consultas que hace Hibernate
-  sql:
-    init:
-      mode: always
