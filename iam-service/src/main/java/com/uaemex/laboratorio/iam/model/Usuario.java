@@ -28,7 +28,7 @@ public class Usuario {
         this.rol = rol;
     }
 
-    // Getters and setters
+    // Getters and setters ---------------------------------------------------------
 
     public UUID getId() {
         return id;
