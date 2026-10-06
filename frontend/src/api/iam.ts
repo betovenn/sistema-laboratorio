@@ -1,12 +1,13 @@
 import { apiFetch } from './client'
 
 export interface LoginResponse {
-  token: string
+  token_acceso: string
 }
 
-export function login(cuenta: string, password: string) {
-  return apiFetch<LoginResponse>('/iam/auth/login', {
+// identificador = número de cuenta (alumno) o de empleado (profesor, laboratorio)
+export function login(identificador: string, password: string) {
+  return apiFetch<LoginResponse>('/auth/v1/login', {
     method: 'POST',
-    body: JSON.stringify({ cuenta, password }),
+    body: JSON.stringify({ identificador, password }),
   })
 }

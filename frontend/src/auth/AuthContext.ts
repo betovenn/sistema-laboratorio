@@ -3,7 +3,7 @@ import type { Claims } from './jwt'
 
 export interface AuthState {
   usuario: Claims | null
-  login: (cuenta: string, password: string) => Promise<void>
+  login: (identificador: string, password: string) => Promise<void>
   logout: () => void
 }
 

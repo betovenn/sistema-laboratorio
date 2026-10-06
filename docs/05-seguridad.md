@@ -42,6 +42,23 @@ inscripción o cambio de titular obligaría a reemitir credenciales a medio seme
 - La clave privada se monta como archivo en `iam-service`, **nunca como variable de entorno
   ni dentro de la imagen**.
 
+## La llave de firma
+
+Vive en `infra/llaves/privada.pem` (fuera del repositorio: `*.pem` está en `.gitignore`) y
+el compose la monta como *secret* en `/run/secrets/jwt_llave_privada`. Se genera una vez:
+
+```bash
+mkdir -p infra/llaves
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out infra/llaves/privada.pem
+chmod 644 infra/llaves/privada.pem   # el contenedor corre con otro usuario
+```
+
+Tiene que ser PKCS#8 (`BEGIN PRIVATE KEY`), que es lo que produce `genpkey`. La clave
+pública no se guarda aparte: `iam-service` la deriva de la privada y la publica en el JWKS
+con un `kid` calculado de la propia llave. Si falta el archivo, `iam-service` no arranca:
+no existe una llave temporal de respaldo, porque los tokens firmados con ella dejarían de
+validar en cada reinicio.
+
 ## Las dos capas de autorización
 
 **Rol** — la responde el token. "¿Eres Profesor?"

@@ -32,6 +32,7 @@ logistica-service/    MS-04 · Go · PostgreSQL
 equipos-service/      MS-05 · Node · Fastify · PostgreSQL + Redis
 ejecucion-service/    MS-06 · Node · NestJS · PostgreSQL
 evaluacion-service/   MS-07 · Python · FastAPI · PostgreSQL
+frontend/             Prototipo de interfaz · React + Vite. Solo inicio de sesión.
 ```
 
 Estado: **`iam-service` es el único con proyecto real**. Los otros seis tienen sus clases
@@ -111,6 +112,8 @@ base y tiene la clave pública en caché). El compose usa el segundo.
 
 ```bash
 cp .env.example .env          # y cambia las contraseñas
+mkdir -p infra/llaves && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+  -out infra/llaves/privada.pem && chmod 644 infra/llaves/privada.pem   # llave de firma de tokens
 docker compose up -d          # infraestructura + iam-service
 docker compose --profile todos up -d   # los siete (falla en los que son esqueleto)
 docker compose logs -f iam-service
@@ -134,8 +137,9 @@ El panel de Traefik está en `http://localhost:8090` (solo desarrollo).
 - **Solo `iam-service` tiene proyecto compilable** (Gradle, Spring Boot 4.1.1, Java 21).
   Los demás tienen clases de dominio pero les falta empaquetado, dependencias y arranque.
   Cada uno lo dice en su `README.md`.
-- **No hay frontend.** Ningún documento lo describe todavía. El compose reserva el lugar
-  pero no existe. Si vas a construirlo, decídelo con el equipo primero.
+- **El frontend es un prototipo.** `frontend/` (React + Vite) solo cubre el inicio de sesión
+  y habla con la API únicamente a través del gateway. La arquitectura del frontend sigue
+  abierta en `docs/09-decisiones.md`: decídela con el equipo antes de hacerlo crecer.
 - **No hay pruebas** más allá del test que generó Spring Initializr.
 - **No hay CI.**
 - **El rol se autodeclara al registrarse**: hoy cualquiera que use un número de empleado

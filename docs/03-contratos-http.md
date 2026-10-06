@@ -28,6 +28,21 @@ Todos exponen además `GET /health` y `GET /health/ready`.
 | `GET /v1/usuarios?cuentas=a,b,c` | Servicios | Resolver nombres en lote. Lo usa MS-06 al congelar el reporte. |
 | `GET /v1/.well-known/jwks.json` | Servicios | Clave pública. **Se consulta una vez al arrancar, no por petición.** |
 
+**`POST /v1/login`**
+
+```json
+// Petición: identificador = número de cuenta o de empleado
+{ "identificador": "318045772", "password": "..." }
+
+// 200
+{ "token_acceso": "eyJhbGciOiJSUzI1NiIs..." }
+```
+
+`400 datos_invalidos` si falta un campo; `401 credenciales_invalidas` si el usuario no
+existe, está inactivo o la contraseña no coincide (no se distingue cuál, a propósito).
+Por ahora solo se emite el token de acceso: el de refresco y `/v1/refrescar` están
+pendientes.
+
 ## MS-02 · `escolar-service`
 
 | Método y ruta | Quién | Para qué |

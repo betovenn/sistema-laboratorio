@@ -23,10 +23,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null)
   }, [])
 
-  const login = useCallback(async (cuenta: string, password: string) => {
-    const { token } = await iam.login(cuenta, password)
-    setToken(token)
-    setUsuario(decodeToken(token))
+  const login = useCallback(async (identificador: string, password: string) => {
+    const { token_acceso } = await iam.login(identificador, password)
+    setToken(token_acceso)
+    setUsuario(decodeToken(token_acceso))
   }, [])
 
   // Cierra la sesión automáticamente cuando el token expira

@@ -6,10 +6,8 @@ export function HomePage() {
 
   return (
     <section className="card">
-      <h2>Bienvenido, {usuario.cuenta}</h2>
+      <h2>Bienvenido, {usuario.sub}</h2>
       <dl className="claims">
-        <dt>ID</dt>
-        <dd>{usuario.sub}</dd>
         <dt>Rol</dt>
         <dd>{usuario.rol}</dd>
         <dt>Sesión iniciada</dt>

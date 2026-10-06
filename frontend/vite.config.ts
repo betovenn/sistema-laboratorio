@@ -5,14 +5,12 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // En desarrollo, Vite reenvía las peticiones a cada microservicio.
-    // Así el navegador solo habla con un origen y no hace falta configurar CORS.
-    // Cuando exista un API Gateway, todas estas rutas apuntarán a él.
+    // En desarrollo, Vite reenvía /api al gateway del compose (localhost:8080), que a su
+    // vez recorta /api/<servicio> y lo manda al microservicio. Así el navegador solo habla
+    // con un origen y no hace falta configurar CORS. Requiere `docker compose up -d`.
+    // Si el gateway quedó en otro puerto: GATEWAY_URL=http://localhost:18080 npm run dev
     proxy: {
-      '/api/iam': {
-        target: 'http://localhost:8080',
-        rewrite: (path) => path.replace(/^\/api\/iam/, ''),
-      },
+      '/api': process.env.GATEWAY_URL ?? 'http://localhost:8080',
     },
   },
 })

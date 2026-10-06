@@ -9,7 +9,7 @@ export function LoginPage() {
   const location = useLocation()
   const destino = (location.state as { from?: string } | null)?.from ?? '/'
 
-  const [cuenta, setCuenta] = useState('')
+  const [identificador, setIdentificador] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
@@ -21,11 +21,11 @@ export function LoginPage() {
     setError(null)
     setCargando(true)
     try {
-      await login(cuenta, password)
+      await login(identificador, password)
       navigate(destino, { replace: true })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        setError('Cuenta o contraseña incorrecta')
+        setError('Identificador o contraseña incorrectos')
       } else {
         setError('No se pudo conectar con el servicio de autenticación')
       }
@@ -41,10 +41,10 @@ export function LoginPage() {
         <p className="muted">Sistema de Laboratorio de Electrónica</p>
 
         <label>
-          Cuenta
+          Número de cuenta o de empleado
           <input
-            value={cuenta}
-            onChange={(e) => setCuenta(e.target.value)}
+            value={identificador}
+            onChange={(e) => setIdentificador(e.target.value)}
             autoComplete="username"
             autoFocus
             required

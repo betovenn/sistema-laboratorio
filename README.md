@@ -29,6 +29,8 @@ HTTP + JSON y un token firmado, así que cada servicio elige su stack sin compro
 
 ```bash
 cp .env.example .env     # cambia todas las contraseñas
+mkdir -p infra/llaves && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+  -out infra/llaves/privada.pem && chmod 644 infra/llaves/privada.pem   # llave de firma de tokens
 docker compose up -d     # infraestructura + iam-service
 ```
 
@@ -81,7 +83,8 @@ integrar al final es donde estos proyectos se caen.
 
 ## Pendientes conocidos
 
-- **No hay frontend.** Ningún documento lo describe; el compose reserva el lugar.
+- **El frontend es un prototipo** de inicio de sesión en `frontend/`; su arquitectura sigue
+  pendiente de decidir (`docs/09-decisiones.md`).
 - **El rol se autodeclara al registrarse.** Ver `docs/05-seguridad.md`.
 - **Falta el tabulador de penalizaciones.** Es una decisión de la academia.
 - **Falta definir** el periodo de retención del expediente y la ventana para pedir revisión.

@@ -1,10 +1,11 @@
-// Claims que emite el iam-service (ver AuthController.generarToken)
+// Claims que emite el iam-service (ver docs/05-seguridad.md y EmisorTokens.emitirAcceso)
 export interface Claims {
-  sub: string
-  cuenta: string
-  rol: string
+  iss: string
+  sub: string // número de cuenta o de empleado
+  rol: 'ALUMNO' | 'PROFESOR' | 'LABORATORIO'
   iat: number
   exp: number
+  jti: string
 }
 
 export function decodeToken(token: string): Claims | null {

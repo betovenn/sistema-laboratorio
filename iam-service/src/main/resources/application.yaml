@@ -1,6 +1,9 @@
 spring:
   application:
     name: iam
+  jackson:
+    # Los cuerpos JSON van en snake_case, como en el resto de los servicios (docs/07).
+    property-naming-strategy: SNAKE_CASE
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/iam_db}
     username: ${SPRING_DATASOURCE_USERNAME:iam}
@@ -28,6 +31,12 @@ jwt:
   emisor: ${JWT_ISSUER:iam-service}
   acceso-minutos: ${JWT_ACCESO_MINUTOS:60}
   refresco-horas: ${JWT_REFRESCO_HORAS:8}
+  # La llave privada se monta como archivo, nunca como variable de entorno (docs/05).
+  llave-privada: ${JWT_LLAVE_PRIVADA:/run/secrets/jwt_llave_privada}
+
+iam:
+  # Solo desarrollo: siembra el usuario 11111 / 12345 mientras no exista /v1/registro.
+  usuario-prueba: ${IAM_USUARIO_PRUEBA:false}
 
 logging:
   level:

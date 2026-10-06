@@ -10,7 +10,7 @@ export function Layout() {
         <span className="brand">Sistema de Laboratorio de Electrónica</span>
         <div className="topbar-user">
           <span>
-            {usuario?.cuenta} · <span className="rol">{usuario?.rol}</span>
+            {usuario?.sub} · <span className="rol">{usuario?.rol}</span>
           </span>
           <button className="btn-secondary" onClick={logout}>
             Cerrar sesión

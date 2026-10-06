@@ -168,7 +168,7 @@ imposible.
 | Qué | Quién decide | Bloquea |
 |---|---|---|
 | **Tabulador de penalizaciones** por tipo de incidencia | La academia | `evaluacion-service` no sabe cuántos puntos descontar. Modelarlo como datos, no como código: una tabla configurable. Si se programa a mano, cada cambio de criterio es un despliegue. |
-| **Frontend**: una SPA con rutas por rol, o tres aplicaciones | El equipo | Recomendación: **una sola SPA**. Comparten sesión y componentes, y el rol ya viene en el token. Tres aplicaciones triplican el trabajo para públicos que se traslapan. |
+| **Frontend**: una SPA con rutas por rol, o tres aplicaciones | El equipo | Recomendación: **una sola SPA**. Comparten sesión y componentes, y el rol ya viene en el token. Tres aplicaciones triplican el trabajo para públicos que se traslapan. Ya existe un prototipo de inicio de sesión (React + Vite) en `frontend/`; no compromete la decisión. |
 | **Candado del rol** al registrarse | El equipo | Ver [`05-seguridad.md`](05-seguridad.md). |
 | **Retención** del expediente y **ventana** para pedir revisión | La academia | Para arrancar: retención indefinida (el volumen es trivial) y sin ventana, validando solo que exista calificación previa. Ambas se endurecen después sin cambiar el esquema. |
 | **Formato de la carga de lista** de alumnos | El equipo | Un CSV de una columna con números de cuenta cubre el caso real. |

@@ -61,4 +61,5 @@ como si lo fuera.
 - Integración con los sistemas escolares de la facultad.
 - Gestión de horarios, aulas o cargas docentes más allá de lo que una práctica necesita.
 - Compras, proveedores o presupuesto del laboratorio.
-- Frontend: todavía no está descrito en ningún documento.
+- Frontend: existe un prototipo de inicio de sesión en `frontend/`, pero su arquitectura
+  todavía no está decidida ni descrita (ver `09-decisiones.md`).
