@@ -14,6 +14,8 @@ spring:
       # En desarrollo: update. Antes de producción, migraciones versionadas (Flyway).
       ddl-auto: ${JPA_DDL_AUTO:update}
     open-in-view: false
+    # Útil para ver en la terminal las consultas que hace Hibernate.
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         jdbc:
