@@ -16,13 +16,14 @@ public class Usuario {
     @Column(name = "passwordHash", nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false)
-    private String rol;
+    @ManyToOne 
+    @JoinColumn(name = "rol_id", nullable = false)
+    private Rol rol;
 
     // Constructors
     public Usuario() {}
 
-    public Usuario(String cuenta, String passwordHash, String rol) {
+    public Usuario(String cuenta, String passwordHash, Rol rol) {
         this.cuenta = cuenta;
         this.passwordHash = passwordHash;
         this.rol = rol;
@@ -51,10 +52,10 @@ public class Usuario {
         return passwordHash;
     }
 
-    public String getRol() {
+    public Rol getRol() {
         return rol;
     }
-    public void setRol(String rol) {
+    public void setRol(Rol rol) {
         this.rol = rol;
     }
 }

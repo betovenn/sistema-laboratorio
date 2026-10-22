@@ -63,7 +63,7 @@ public class AuthController {
         return Jwts.builder()
                 .setSubject(usuario.getId().toString())
                 .claim("cuenta", usuario.getCuenta())
-                .claim("rol", usuario.getRol())
+                .claim("rol", usuario.getRol().getNombre())
                 .setIssuedAt(ahora)
                 .setExpiration(expiracion)
                 .signWith(secretKey)
